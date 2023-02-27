@@ -7,7 +7,7 @@ pub fn start_client() {
     let window = pc::initscr();
     window.keypad(true);
 
-    let mut stream = net::TcpStream::connect("127.0.0.1:6969")
+    let stream = net::TcpStream::connect("127.0.0.1:6969")
         .expect("Couldn't connect to the server");
 
     loop {
@@ -26,14 +26,14 @@ fn user_interface(mut stream: net::TcpStream, window: &pc::Window) {
     scan(window, &mut user_input);
     window.addch('\n');
 
-    let length = stream.write(user_input.as_bytes()).expect("Tcp Write Failed");
+    stream.write(user_input.as_bytes()).expect("Tcp Write Failed");
     stream.flush().unwrap();
     pc::endwin();
     // println!("client sent {} number of bytes", length);
 
     let mut buff = Vec::new();
     let mut stream = BufReader::new(&stream);
-    let length = stream.read_until(b'\n', &mut buff);
+    stream.read_until(b'\n', &mut buff).unwrap();
 
     // println!("working!!");
     // println!("{}", String::from_utf8(buff).unwrap());
