@@ -1,13 +1,17 @@
 use std::net;
-use std::io::{self, BufReader};
+use pancurses as pc;
 use std::io::prelude::*;
+use std::io::BufReader;
 
 pub fn start_client() {
+    let window = pc::initscr();
+    window.keypad(true);
+
     let mut stream = net::TcpStream::connect("127.0.0.1:6969")
         .expect("Couldn't connect to the server");
 
     loop {
-        user_interface(&mut stream)
+        user_interface(stream.try_clone().unwrap(), &window)
     }
 
     /* let mut buff = String::new();
@@ -17,16 +21,52 @@ pub fn start_client() {
     println!("{}", buff); */
 }
 
-fn user_interface(tcp_stream: &mut net::TcpStream) {
+fn user_interface(mut stream: net::TcpStream, window: &pc::Window) {
     let mut user_input = String::new();
-    let stdin = io::stdin();
-    stdin.read_line(&mut user_input).unwrap();
+    scan(window, &mut user_input);
+    window.addch('\n');
 
-    tcp_stream.write(user_input.as_bytes()).expect("Tcp Write Failed");
-    tcp_stream.flush().unwrap();
+    let length = stream.write(user_input.as_bytes()).expect("Tcp Write Failed");
+    stream.flush().unwrap();
+    pc::endwin();
+    // println!("client sent {} number of bytes", length);
 
-    let mut buff = [0; 1024];
-    let mut stream = BufReader::new(tcp_stream);
-    stream.read(&mut buff).expect("Tcp Read Failed");
-    println!("{}", String::from_utf8(buff.to_vec()).unwrap());
+    let mut buff = Vec::new();
+    let mut stream = BufReader::new(&stream);
+    let length = stream.read_until(b'\n', &mut buff);
+
+    // println!("working!!");
+    // println!("{}", String::from_utf8(buff).unwrap());
+    window.addstr(String::from_utf8(buff).unwrap());
 }
+
+fn scan(window: &pc::Window, buffer: &mut String) {
+    pc::noecho();
+    loop {
+        match window.getch().unwrap() {
+            // Enter / Return
+            pc::Input::Character('\n') => {
+                buffer.push('\n');
+                pc::echo();
+                break;
+            },
+
+            pc::Input::KeyBackspace => {
+                if buffer.len() != 0 {
+                    buffer.pop();
+                    window.mv(window.get_cur_y(), window.get_cur_x() - 1);
+                    window.delch();
+                }
+                continue;
+            },
+
+            pc::Input::Character(read) => {
+                window.addch(read);
+                buffer.push(read);
+            },
+
+            _ => (),
+        }
+    }
+}
+
