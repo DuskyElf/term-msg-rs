@@ -14,8 +14,8 @@ pub async fn start_client() {
 
     let result = ui(&window).await;
 
+    pc::endwin();
     if let Err(err) = result {
-        pc::endwin();
         match err {
             Error::InvalidEvent => {
                 eprintln!("Server Error: Server sent an Invalid event")
@@ -24,8 +24,6 @@ pub async fn start_client() {
                 eprintln!("{err}")
             }
         }
-    } else {
-        pc::endwin();
     }
 
 }
