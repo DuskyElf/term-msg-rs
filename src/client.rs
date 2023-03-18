@@ -4,6 +4,7 @@ use std::time;
 use tokio::net;
 use std::thread;
 use pancurses as pc;
+use std::process::exit;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 
 use term_msg_rs::*;
@@ -18,10 +19,12 @@ pub async fn start_client() {
     if let Err(err) = result {
         match err {
             Error::InvalidEvent => {
-                eprintln!("Server Error: Server sent an Invalid event")
+                eprintln!("Server Error: Server sent an Invalid event");
+                exit(1);
             }
             Error::IoError(err) => {
-                eprintln!("{err}")
+                eprintln!("{err}");
+                exit(1);
             }
         }
     }
